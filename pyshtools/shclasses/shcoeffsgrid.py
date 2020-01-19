@@ -5,6 +5,7 @@ import numpy as _np
 import matplotlib as _mpl
 import matplotlib.pyplot as _plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable as _make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes as _inset_axes
 import copy as _copy
 import warnings as _warnings
 from scipy.special import factorial as _factorial
@@ -3492,9 +3493,9 @@ class SHGrid(object):
              cmap_limits_complex=None, cmap_reverse=False,
              cb_triangles='neither', cb_label=None, cb_ylabel=None,
              cb_tick_interval=None, cb_minor_tick_interval=None,
-             cb_offset=None, grid=False, axes_labelsize=None,
-             tick_labelsize=None, xlabel=None, ylabel=None, ax=None, ax2=None,
-             show=True, fname=None):
+             cb_offset=None, cb_length=None, cb_width=None, grid=False,
+             axes_labelsize=None, tick_labelsize=None, xlabel=None,
+             ylabel=None, ax=None, ax2=None, show=True, fname=None):
         """
         Plot the raw data using a Cartopy projection or a matplotlib
         cylindrical projection.
@@ -3505,9 +3506,9 @@ class SHGrid(object):
                           ticks, xlabel, ylabel, title, colorbar, cmap,
                           cmap_limits, cmap_limits_complex, cmap_reverse,
                           cb_triangles, cb_label, cb_ylabel, cb_tick_interval,
-                          cb_minor_tick_interval, cb_offset, grid, titlesize,
-                          axes_labelsize, tick_labelsize, ax, ax2, show,
-                          fname])
+                          cb_minor_tick_interval, cb_offset, cb_length,
+                          cb_width, grid, titlesize, axes_labelsize,
+                          tick_labelsize, ax, ax2, show, fname])
 
         Parameters
         ----------
@@ -3563,6 +3564,14 @@ class SHGrid(object):
         cb_offset : float or int, optional, default = None
             Offset of the colorbar from the map edge in points. If None,
             the offset will be calculated automatically.
+        cb_length : float, optional, default = None
+            Length of the colorbar in percent with respect to the length of the
+            respective image axis. Default is 100 for cylindrical projections
+            and 80 for other projections.
+        cb_width : float, optiona, default = None
+            Width of the colorbar in percent with respect to the width of the
+            respective image axis. Defaults are 2.5 and 5 for vertical and 
+            horizontal colorbars, respectively.
         grid : bool, optional, default = False
             If True, plot major grid lines.
         titlesize : int, optional, default = None
@@ -3619,6 +3628,7 @@ class SHGrid(object):
                 tick_interval=tick_interval, ticks=ticks,
                 minor_tick_interval=minor_tick_interval,
                 cb_tick_interval=cb_tick_interval, cb_ylabel=cb_ylabel,
+                cb_length=cb_length, cb_width=cb_width,
                 cb_minor_tick_interval=cb_minor_tick_interval, cmap=cmap,
                 cmap_limits=cmap_limits, cb_offset=cb_offset,
                 cmap_limits_complex=cmap_limits_complex,
@@ -3641,6 +3651,7 @@ class SHGrid(object):
                        cb_tick_interval=cb_tick_interval,
                        cb_minor_tick_interval=cb_minor_tick_interval,
                        cmap_limits=cmap_limits, cb_ylabel=cb_ylabel,
+                       cb_length=cb_length, cb_width=cb_width,
                        cmap_limits_complex=cmap_limits_complex,
                        cmap_reverse=cmap_reverse)
 
@@ -3973,7 +3984,8 @@ class DHRealGrid(SHGrid):
               titlesize=None, cmap=None, tick_interval=None, ticks=None,
               minor_tick_interval=None, cb_tick_interval=None, cb_ylabel=None,
               cb_minor_tick_interval=None, cmap_limits=None, cmap_reverse=None,
-              cmap_limits_complex=None, cb_offset=None):
+              cmap_limits_complex=None, cb_offset=None, cb_length=None,
+              cb_width=None):
         """Plot the raw data as a matplotlib simple cylindrical projection,
            or with Cartopy when projection is specified."""
         if ax is None:
@@ -4184,16 +4196,50 @@ class DHRealGrid(SHGrid):
 
             divider = _make_axes_locatable(axes)
             if colorbar == 'vertical':
-                cax = divider.append_axes('right', size='2.5%', pad=offset,
-                                          axes_class=_plt.Axes)
+                cb_loc = 'right'
+                width = '100%'
+                loc_inset = 'center left'
+                if cb_width is None:
+                    size = '2.5%'
+                else:
+                    size = '{:f}%'.format(cb_width)
+                if cb_length is None:
+                    if projection is None:
+                        height = '100%'
+                    elif isinstance(projection, _ccrs.PlateCarree):
+                        height = '100%'
+                    else:
+                        height = '80%'
+                else:
+                    height = '{:f}%'.format(cb_length)
             elif colorbar == 'horizontal':
-                cax = divider.append_axes('bottom', size='5%', pad=offset,
-                                          axes_class=_plt.Axes)
+                cb_loc = 'bottom'
+                loc_inset = 'upper center'
+                height = '100%'
+                if cb_width is None:
+                    size = '5%'
+                else:
+                    size = '{:f}%'.format(cb_width)
+                if cb_length is None:
+                    if projection is None:
+                        width = '100%'
+                    elif isinstance(projection, _ccrs.PlateCarree):
+                        width = '100%'
+                    else:
+                        width = '80%'
+                else:
+                    width = '{:f}%'.format(cb_length)
             else:
                 raise ValueError("colorbar must be either 'horizontal' or "
                                  "'vertical'. Input value is {:s}."
                                  .format(repr(colorbar)))
-            cbar = _plt.colorbar(cim, cax=cax, orientation=colorbar,
+
+            cax = divider.append_axes(cb_loc, size=size, pad=offset,
+                                      axes_class=_plt.Axes)
+            cax.set_visible(False)
+            iax = _inset_axes(cax, width=width, height=height, loc=loc_inset,
+                              borderpad=0)
+            cbar = _plt.colorbar(cim, cax=iax, orientation=colorbar,
                                  extend=cb_triangles)
             if cb_label is not None:
                 cbar.set_label(cb_label, fontsize=axes_labelsize)
@@ -4456,7 +4502,7 @@ class DHComplexGrid(SHGrid):
               tick_interval=None, minor_tick_interval=None, cb_ylabel=None,
               cb_tick_interval=None, cb_minor_tick_interval=None,
               cmap_limits=None, cmap_reverse=None, cmap_limits_complex=None,
-              cb_offset=None):
+              cb_offset=None, cb_length=None, cb_width=None):
         """Plot the raw data as a matplotlib simple cylindrical projection,
            or with Cartopy when projection is specified."""
         if ax is None:
@@ -4491,6 +4537,7 @@ class DHComplexGrid(SHGrid):
                             title=title[0], titlesize=titlesize,
                             xlabel=xlabel, ylabel=ylabel, cb_ylabel=cb_ylabel,
                             cmap=cmap, cmap_limits=cmap_limits,
+                            cb_length=cb_length, cb_width=cb_width,
                             cmap_reverse=cmap_reverse, ax=axreal)
 
         self.to_imag().plot(projection=projection, tick_interval=tick_interval,
@@ -4504,6 +4551,7 @@ class DHComplexGrid(SHGrid):
                             title=title[1], titlesize=titlesize,
                             cmap=cmap, cmap_limits=cmap_limits_complex,
                             cmap_reverse=cmap_reverse, cb_offset=cb_offset,
+                            cb_length=cb_length, cb_width=cb_width,
                             xlabel=xlabel, ylabel=ylabel,
                             ax=axcomplex)
 
@@ -4660,7 +4708,8 @@ class GLQRealGrid(SHGrid):
               title=None, titlesize=None, cmap=None, tick_interval=None,
               minor_tick_interval=None, cb_tick_interval=None, ticks=None,
               cb_minor_tick_interval=None, cmap_limits=None, cmap_reverse=None,
-              cmap_limits_complex=None, cb_ylabel=None, cb_offset=None):
+              cmap_limits_complex=None, cb_ylabel=None, cb_offset=None,
+              cb_length=None, cb_width=None):
         """Plot the raw data using a simply cylindrical projection."""
         if ax is None:
             if colorbar is not None:
@@ -4949,7 +4998,8 @@ class GLQComplexGrid(SHGrid):
               titlesize=None, cmap=None, tick_interval=None, cb_ylabel=None,
               minor_tick_interval=None, cb_tick_interval=None,
               cb_minor_tick_interval=None, cmap_limits=None, cmap_reverse=None,
-              cmap_limits_complex=None, cb_offset=None):
+              cmap_limits_complex=None, cb_offset=None, cb_length=None,
+              cb_width=None):
         """Plot the raw data using a simply cylindrical projection."""
         if ax is None:
             if colorbar is not None:
@@ -4980,6 +5030,7 @@ class GLQComplexGrid(SHGrid):
                             cb_minor_tick_interval=cb_minor_tick_interval,
                             grid=grid, axes_labelsize=axes_labelsize,
                             tick_labelsize=tick_labelsize, cb_offset=cb_offset,
+                            cb_length=cb_length, cb_width=cb_width,
                             title=title[0], titlesize=titlesize,
                             xlabel=xlabel, ylabel=ylabel, cb_ylabel=cb_ylabel,
                             cmap=cmap, cmap_limits=cmap_limits,
@@ -4991,6 +5042,7 @@ class GLQComplexGrid(SHGrid):
                             cb_label=cb_label, ticks=ticks,
                             cb_tick_interval=cb_tick_interval,
                             cb_minor_tick_interval=cb_minor_tick_interval,
+                            cb_length=cb_length, cb_width=cb_width,
                             grid=grid, axes_labelsize=axes_labelsize,
                             tick_labelsize=tick_labelsize, cb_offset=cb_offset,
                             title=title[1], titlesize=titlesize,
