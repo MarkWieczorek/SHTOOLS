@@ -241,7 +241,8 @@ fortran:
 	@echo "Compile your Fortran code with the following flags:"
 	@echo "---------------------------------------------------"
 	@echo $(F95) $(MODFLAG) $(F95FLAGS) -L$(LIBPATH) -l$(LIBNAME) $(FFTW) $(LAPACK) $(BLAS)
-	@echo "include directory" $(INCLUDE_DIRS)
+	@echo "INCLUDE_DIRS" $(INCLUDE_DIRS)
+	@echo "BUILD_DIR" $(BUILD_DIR)
 
 fortran-mp:
 # Delete .o files before and after compiling with OpenMP to avoid issues with "fortran" build.
