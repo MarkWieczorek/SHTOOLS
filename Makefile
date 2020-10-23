@@ -112,15 +112,10 @@
 #       Remove the man and html-man pages.
 #
 #   make www
-#       Make the static html web documention in the directory www using Jekyll.
-#       First, you must install "ruby" (using brew on macOS), and then install
-#       the gem bundler using "gem install bundler jekyll". To serve the web
-#       documents without making static html files, go to the directory `docs`
-#       type the command `bundle update` and `bundle exec jekyll serve`, and
-#       then open http://127.0.0.1:4000.
+#       Make the static html web documention using jupyter-book.
 #
-#   make remove-www
-#       Remove the directory containing the static html web site.
+#   make clean-www
+#       Remove the static html files created by jupyter-book.
 #
 ###############################################################################
 
@@ -134,7 +129,7 @@ F95 = gfortran
 PYTHON = python3
 CXX = g++
 JUPYTER = jupyter nbconvert --ExecutePreprocessor.kernel_name=python3
-JEKYLL = bundle exec jekyll
+JB = jupyter-book
 FLAKE8 = flake8
 SHELL = /bin/sh
 PY3EXT = $(shell $(PYTHON) -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))' || echo nopy3)
@@ -229,7 +224,7 @@ endif
 	run-fortran-tests-no-timing doc remove-doc python-tests \
 	python-tests-no-timing uninstall clean clean-fortran-tests \
 	clean-python-tests clean-python clean-libs remove-notebooks notebooks \
-	run-notebooks www remove-www help check
+	run-notebooks www clean-www help check
 
 help:
 	@echo "Commands:"
@@ -312,10 +307,16 @@ remove-doc:
 	@echo "--> Removed man files and web site source md files"
 
 www:
-	@cd $(WWWSRC) ; bundle update ; $(JEKYLL) build -d ../$(WWWDEST)
+	@$(JB) build book
+	@$(JB) build book/pyshtools
+	@$(JB) build book/shtools
+	@cp -r book/pyshtools/_build/html book/_build/html/pyshtools
+	@cp -r book/shtools/_build/html book/_build/html/shtools
 
-remove-www:
-	@-rm -rf $(WWWDEST)
+clean-www:
+	@$(JB) clean book
+	@$(JB) clean book/pyshtools
+	@$(JB) clean book/shtools
 
 notebooks:
 	@$(MAKE) -C $(NBDIR) -f Makefile JUPYTER="$(JUPYTER)"

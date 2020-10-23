@@ -1,0 +1,28 @@
+# Book settings
+title                       : pyshtools
+author                      : the SHTOOLS developers
+copyright                   : "2020"
+logo                        : images/logo.png
+exclude_patterns            : [_build, Thumbs.db, .DS_Store, "**.ipynb_checkpoints"]
+# Execution settings
+execute:
+  execute_notebooks         : off
+# HTML-specific settings
+html:
+  favicon                   : images/favicon.ico
+  use_edit_page_button      : true
+  use_repository_button     : true
+  use_issues_button         : false
+  extra_navbar              : ""
+  extra_footer              : ""  # Will be displayed underneath the footer.
+  google_analytics_id       : ""  # A GA id that can be used to track book views.
+  home_page_in_navbar       : true  # Whether to include your home page in the left Navigation Bar
+# Launch button settings
+repository:
+  url                       : https://github.com/SHTOOLS/SHTOOLS  # The URL to your book's repository
+  path_to_book              : book
+  branch                    : develop
+# Advanced and power-user settings
+sphinx:
+  extra_extensions          :   # A list of extra extensions to load by Sphinx (added to those already used by JB).
+  - sphinx.ext.autodoc

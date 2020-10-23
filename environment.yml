@@ -21,3 +21,6 @@ dependencies:
     - pypandoc
     - flake8
     - pip
+    - pip:
+      - jupyter-book
+
